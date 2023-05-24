@@ -21,14 +21,13 @@ class TimeSeriesGeneratorApi {
 
   /// function for subscribing to the server
   Stream<BatchedData> subscribe() {
-    print('here');
     final subscribeRequest = Empty();
     final subscription = _client.subscribeToTimeSeries(subscribeRequest);
-    print('here2');
     return subscription.map((event) => event);
   }
 
-  Stream<List<double>> generateHeartRateStream(
+  /// documentation
+  Stream<Point> generateHeartRateStream(
     int heartRate,
     int duration,
   ) async* {
@@ -49,7 +48,7 @@ class TimeSeriesGeneratorApi {
       // Generate the heart rate signal using the instantaneous frequency
       final heartRateWithVariation = instantaneousFrequency * 60;
 
-      yield [x[i].toDouble(), heartRateWithVariation];
+      yield Point(x[i].toDouble(), heartRateWithVariation);
       await Future.delayed(const Duration(milliseconds: 40), () {});
     }
   }

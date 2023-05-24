@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:acoustics_repository/acoustics_repository.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -33,14 +35,14 @@ class HeartRateView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-         ElevatedButton(
+        ElevatedButton(
           onPressed: () {
             context.read<HeartRateBloc>().add(StartHeartRate());
           },
           child: const Text('start heart rate'),
         ),
         AspectRatio(
-          aspectRatio: 1.5,
+          aspectRatio: 3,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: BlocBuilder<HeartRateBloc, HeartRateState>(
@@ -101,23 +103,62 @@ class STPSDView extends StatelessWidget {
           child: const Text('calculate stpsd'),
         ),
         AspectRatio(
-          aspectRatio: 1.5,
+          aspectRatio: 2,
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: BlocBuilder<HeartRateBloc, HeartRateState>(
               builder: (context, state) {
                 final data = state.stpsdData;
+
+                // Calculate dynamic min and max y-values
+                double minY = double.infinity;
+                double maxY = double.negativeInfinity;
+                for (final spot in data) {
+                  if (!spot.y.isNaN) {
+                    minY = min(minY, spot.y);
+                    maxY = max(maxY, spot.y);
+                  } else {
+                    minY = 0;
+                    maxY = 100;
+                  }
+                }
+
+                // Adjust min and max y-values for better visualization
+                minY = max(0, minY - 10);
+                maxY = maxY + 10;
+
                 return LineChart(
                   LineChartData(
-                    minY: 0,
-                    maxY: 1000,
-                    minX: 0,
+                    minY: -50,
+                    maxY: 100,
+                    minX: data.isNotEmpty ? data.first.x : 0,
                     maxX: data.isNotEmpty ? data.last.x : 0,
                     lineTouchData: LineTouchData(enabled: false),
                     clipData: FlClipData.all(),
                     gridData: FlGridData(show: true, drawVerticalLine: false),
                     borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(show: false),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            return Text(value.round().toString());
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          reservedSize: 70,
+                          showTitles: true,
+                          getTitlesWidget: (value, meta) {
+                            return Text('${value.round()} dB');
+                          },
+                        ),
+                      ),
+                      topTitles: AxisTitles(),
+                      rightTitles: AxisTitles(),
+                    ),
                     lineBarsData: [
                       LineChartBarData(
                         spots: state.stpsdData,

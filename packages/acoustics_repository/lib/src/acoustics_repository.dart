@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:time_series_generator_api/generated/time_series_generator.dart';
 import 'package:time_series_generator_api/time_series_generator_api.dart';
 
@@ -34,7 +36,7 @@ class AcousticsRepository {
   }
 
   // just for testing
-  Stream<List<double>> getHeartRateStream() {
-    return _generatorApi.generateHeartRateStream(70, 120000000);
+  Stream<Point> getHeartRateStream() {
+    return _generatorApi.generateHeartRateStream(70, 200);
   }
 }
