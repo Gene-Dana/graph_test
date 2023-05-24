@@ -22,19 +22,13 @@ class AcousticsRepository {
 
   /// publish tones for the generator
 
-  Future<void> setTones() async {
-    final publishRequest = TimeSeriesConfig()
-      ..sampleRate = 44100
-      ..tones.addAll([
-        ToneConfig(initialPhase: 0, amplitude: 1, frequency: 440),
-        ToneConfig(initialPhase: 0, amplitude: 0.5, frequency: 880),
-        ToneConfig(initialPhase: 0, amplitude: 0.25, frequency: 1320),
-      ]);
+  Future<void> setTones(TimeSeriesConfig publishRequest) async {
+   
     final response = await _generatorApi.publish(publishRequest);
 
     print(response.message);
   }
-
+  
   // just for testing
   Stream<Point> getHeartRateStream() {
     return _generatorApi.generateHeartRateStream(70, 200);

@@ -6,8 +6,14 @@ abstract class HeartRateEvent extends Equatable {
   @override
   List<Object> get props => [];
 }
+class StartSubscribe extends HeartRateEvent {}
+
+class StartPublish extends HeartRateEvent {}
 
 class StartHeartRate extends HeartRateEvent {}
+
+
+
 
 
 class StartSTPSD extends HeartRateEvent {}

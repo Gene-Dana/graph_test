@@ -37,9 +37,16 @@ class HeartRateView extends StatelessWidget {
       children: [
         ElevatedButton(
           onPressed: () {
-            context.read<HeartRateBloc>().add(StartHeartRate());
+            context.read<HeartRateBloc>().add(StartPublish());
           },
-          child: const Text('start heart rate'),
+          child: const Text('pub'),
+        ),
+
+          ElevatedButton(
+          onPressed: () {
+            context.read<HeartRateBloc>().add(StartSubscribe());
+          },
+          child: const Text('subscribe'),
         ),
         AspectRatio(
           aspectRatio: 3,
@@ -50,8 +57,8 @@ class HeartRateView extends StatelessWidget {
                 final data = state.chartData;
                 return LineChart(
                   LineChartData(
-                    minY: 20,
-                    maxY: 100,
+                    minY: -10,
+                    maxY: 10,
                     minX: data.length > 1 ? state.chartData.first.x : 0,
                     maxX: data.length > 1 ? state.chartData.last.x : 0,
                     lineTouchData: LineTouchData(enabled: false),
@@ -71,8 +78,8 @@ class HeartRateView extends StatelessWidget {
                           show: false,
                         ),
                         gradient: LinearGradient(
-                          colors: [Colors.red.withOpacity(0), Colors.red],
-                          stops: const [0.1, 1.0],
+                          colors: [Colors.white, Colors.red],
+                          stops: const [0.0, 0.2],
                         ),
                         barWidth: 4,
                         isCurved: false,

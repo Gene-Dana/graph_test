@@ -7,6 +7,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:fftea/fftea.dart';
+import 'package:time_series_generator_api/generated/time_series_generator.dart';
 
 part 'heart_rate_event.dart';
 part 'heart_rate_state.dart';
@@ -17,13 +18,92 @@ class HeartRateBloc extends Bloc<HeartRateEvent, HeartRateState> {
   })  : _acousticsRepository = acousticsRepository,
         super(const HeartRateState()) {
     on<StartHeartRate>(_onStartHeartRate);
+    on<StartSubscribe>(_onStartSubscribe);
+
+    on<StartPublish>(_onStartPublish);
     on<StartSTPSD>(_onStartSTPSD);
   }
-  final windowSize = 16;
-  final overlap = 128;
-  final samplingRate = 1000.0;
+  final windowSize = 256;
+  // final overlap = 128;
+  final samplingRate = 4410.0;
+  final buffer = Queue<Point>();
 
   final AcousticsRepository _acousticsRepository;
+
+  Future<void> _onStartPublish(
+      StartPublish event, Emitter<HeartRateState> emit) async {
+    final publishRequest = TimeSeriesConfig()
+      ..sampleRate = 4410
+      ..tones.addAll([
+        ToneConfig(initialPhase: 0, amplitude: 10, frequency: 1000),
+        ToneConfig(initialPhase: 0, amplitude: 5, frequency: 80),
+        ToneConfig(initialPhase: 0, amplitude: 1, frequency: 10),
+      ]);
+
+    await _acousticsRepository.setTones(publishRequest);
+
+    await emit.forEach<BatchedData>(_acousticsRepository.getCombinedTone(),
+        onData: (batch) {
+      for (int i = 0; i < batch.yValues.length;) {
+        final updatedList = state.chartData.map((e) => e).toList();
+        if (updatedList.length > 100) {
+          updatedList.removeAt(0);
+        }
+
+        final point = Point(batch.xValues[i], batch.yValues[i]);
+
+        final newData = FlSpot(point.x, point.y);
+
+        buffer.add(point);
+
+        if (buffer.length >= windowSize) {
+          final stpsdData = <FlSpot>[];
+
+          // Perform FFT on the buffer
+          final spectrum = performFFT(buffer);
+
+          // Compute power spectrum
+          final powerSpectrum = computePowerSpectrum(spectrum);
+
+          // Convert power spectrum to dB scale
+          final powerSpectrumdB = convertToDecibel(powerSpectrum);
+
+          // Generate frequency axis
+          final frequencyAxis = generateFrequencyAxis(windowSize, samplingRate);
+
+          // Create FlSpot objects for plotting
+          for (int i = 0; i < frequencyAxis.length; i++) {
+            stpsdData.add(FlSpot(frequencyAxis[i], powerSpectrumdB[i]));
+          }
+
+          buffer.clear(); // Clear the buffer after computing the FFT
+
+          // Update the state or perform any further processing
+          return state.copyWith(stpsdData: stpsdData);
+        }
+
+        return state.copyWith(chartData: updatedList..add(newData));
+      }
+
+      return state;
+    });
+  }
+
+  Future<void> _onStartSubscribe(
+      StartSubscribe event, Emitter<HeartRateState> emit) async {
+    await emit.forEach<BatchedData>(_acousticsRepository.getCombinedTone(),
+        onData: (batch) {
+      print(batch.xValues.first);
+      // final newData = FlSpot(point.x.toDouble(), point.y.toDouble());
+      // final updatedList = state.chartData.map((e) => e).toList();
+
+      // if (updatedList.length > 50) {
+      //   updatedList.removeAt(0);
+      // }
+
+      return state;
+    });
+  }
 
   Future<void> _onStartHeartRate(
       StartHeartRate event, Emitter<HeartRateState> emit) async {
