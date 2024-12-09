@@ -100,7 +100,6 @@ class _MyHomePageState extends State<MyHomePage> {
             ),
             Text(
               '$_message',
-              style: Theme.of(context).textTheme.headline4,
             ),
             Expanded(
               child: ListView.builder(
